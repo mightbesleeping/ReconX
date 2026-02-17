@@ -1,0 +1,34 @@
+.root {
+    -fx-background-color: #0d0d0d; /* Deep Black */
+}
+
+.label {
+    -fx-text-fill: #00ff41; /* Matrix Green */
+    -fx-font-family: "Consolas";
+}
+
+.text-field {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: #00ff41;
+    -fx-prompt-text-fill: #008f11;
+    -fx-border-color: #00ff41;
+    -fx-border-width: 1px;
+}
+
+.button {
+    -fx-background-color: #00ff41;
+    -fx-text-fill: #0d0d0d;
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+}
+
+.button:hover {
+    -fx-background-color: #008f11;
+}
+
+.text-area {
+    -fx-control-inner-background: #000000;
+    -fx-text-fill: #00ff41;
+    -fx-font-family: "Consolas";
+    -fx-border-color: #00ff41;
+}
