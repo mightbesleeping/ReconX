@@ -1,94 +1,152 @@
 package com.reconx;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class App extends Application {
 
+    // Declare services globally so they are created once
+    private final GoogleSearchService googleService = new GoogleSearchService();
+    private final EmailService emailService = new EmailService();
+    private final DomainService domainService = new DomainService();
+    private final IPService ipService = new IPService();
+
     @Override
     public void start(Stage stage) {
-        EmailService emailService = new EmailService();
-        DomainService domainService = new DomainService();
-        // 1. Initialize all UI components first
+        // --- UI COMPONENTS ---
         Label titleLabel = new Label("> ReconX_Scanner_v1.0");
-        TextField inputField = new TextField();
-        inputField.setPromptText("Enter target (IP/Domain/Email)...");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
 
-        Button searchBtn = new Button("EXECUTE SCAN");
+        TextField inputField = new TextField();
+        inputField.setPromptText("Enter Target (IP / Domain / Email / Username)...");
+
+        Button searchBtn = new Button("EXECUTE INTELLIGENCE SCAN");
+        searchBtn.setMaxWidth(Double.MAX_VALUE); // Button stretches to fill width
+
+        Button saveBtn = new Button("SAVE REPORT TO FILE");
+        saveBtn.setStyle("-fx-background-color: #0000FF; -fx-text-fill: white;");
+        saveBtn.setMaxWidth(Double.MAX_VALUE);
+
         Button clearBtn = new Button("CLEAR CONSOLE");
         clearBtn.setStyle("-fx-background-color: #ff0000; -fx-text-fill: white;");
+        clearBtn.setMaxWidth(Double.MAX_VALUE);
 
         TextArea resultsArea = new TextArea();
         resultsArea.setEditable(false);
-        resultsArea.setPrefHeight(300);
+        resultsArea.setPrefHeight(400);
+        resultsArea.setStyle("-fx-control-inner-background: #000000; -fx-text-fill: #00ff00; -fx-font-family: 'Consolas';");
 
-        // 2. Setup the Layout
-        VBox layout = new VBox(15, titleLabel, inputField, searchBtn, clearBtn, resultsArea);
+        // --- LAYOUT ---
+        VBox layout = new VBox(15, titleLabel, inputField, searchBtn, saveBtn, clearBtn, resultsArea);
         layout.setPadding(new Insets(20));
+        VBox.setVgrow(resultsArea, Priority.ALWAYS); // Area grows with window
 
-        // 3. Services
-        IPService ipService = new IPService();
-        DatabaseManager.initialize(); // Ensure DB is ready
+        // Initialize DB
+        DatabaseManager.initialize();
 
-        // 4. Button Actions
+        // --- ACTION HANDLERS ---
+
+        // 1. CLEAR BUTTON
         clearBtn.setOnAction(e -> resultsArea.clear());
 
+        // 2. SAVE BUTTON
+        saveBtn.setOnAction(e -> {
+            String target = inputField.getText().trim();
+            String data = resultsArea.getText();
+            if (!target.isEmpty() && !data.isEmpty()) {
+                ReportManager.saveReport(target, data);
+            } else {
+                resultsArea.setText("[!] No data to save. Run a scan first.");
+            }
+        });
+
+        // 3. SEARCH BUTTON (The Core Logic)
         searchBtn.setOnAction(e -> {
             String input = inputField.getText().trim();
             if (input.isEmpty()) return;
 
+            resultsArea.clear();
             String type = detectInputType(input);
-            resultsArea.setText("[*] Target: " + input + " (" + type + ")\n[*] Status: Querying APIs...");
 
-            // Save to local history database
+            // Initial Status Update
+            resultsArea.setText("[*] Target: " + input + "\n[*] Type Detected: " + type + "\n[*] Status: Initializing Search Algorithms...\n");
+
+            // Save to History DB
             DatabaseManager.saveSearch(input, type);
 
-            if (type.equals("IP_ADDRESS")) {
-                new Thread(() -> {
-                    String result = ipService.getIPInfo(input);
-                    javafx.application.Platform.runLater(() -> resultsArea.setText(result));
-                }).start();
-            }
-            else if (type.equals("DOMAIN_NAME")) {
-                new Thread(() -> {
-                    String result = domainService.getDNSRecords(input);
-                    javafx.application.Platform.runLater(() -> resultsArea.setText(result));
-                }).start();
-            }
-            else if (type.equals("EMAIL_ADDRESS")) {
-                new Thread(() -> {
-                    String result = emailService.getEmailReport(input);
-                    javafx.application.Platform.runLater(() -> resultsArea.setText(result));
-                }).start();
-            }
-// Final Catch-All for typos or empty detections
-            else {
-                resultsArea.setText("[!] Error: Could not detect a valid Target Type.\n[!] Please try an IP (8.8.8.8), Domain (google.com), or Email.");
-            }
+            // Launch Search in Background Thread
+            new Thread(() -> {
+                String result = "";
+
+                try {
+                    switch (type) {
+                        case "IP_ADDRESS":
+                            updateStatus(resultsArea, "Querying Geo-Location Databases...");
+                            result = ipService.getIPInfo(input);
+                            break;
+
+                        case "DOMAIN_NAME":
+                            updateStatus(resultsArea, "Fetching DNS & WHOIS Records...");
+                            result = domainService.getDNSRecords(input);
+                            break;
+
+                        case "EMAIL_ADDRESS":
+                            updateStatus(resultsArea, "Checking Reputation & Breaches...");
+                            result = emailService.getEmailReport(input);
+                            break;
+
+                        case "USERNAME":
+                            updateStatus(resultsArea, "Running Google Intelligence Algorithm...");
+                            // This uses your new Google API Service
+                            result = googleService.searchSocialMedia(input);
+                            break;
+
+                        default:
+                            result = "[!] Error: Unknown format. Try an IP, Domain, or Email.";
+                    }
+                } catch (Exception ex) {
+                    result = "[!] Critical Error during scan: " + ex.getMessage();
+                }
+
+                // Final Update to UI
+                String finalResult = result;
+                Platform.runLater(() -> resultsArea.appendText("\n" + finalResult + "\n\n[*] SCAN COMPLETE."));
+
+            }).start();
         });
 
-        // 5. Scene & Styling
-        Scene scene = new Scene(layout, 550, 500);
+        // --- SCENE SETUP ---
+        Scene scene = new Scene(layout, 600, 550);
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         } catch (Exception ex) {
-            System.out.println("Style sheet not found.");
+            System.out.println("Warning: style.css not found.");
         }
 
-        stage.setTitle("ReconX - OSINT Aggregator");
+        stage.setTitle("ReconX - Advanced OSINT Tool");
         stage.setScene(scene);
         stage.show();
     }
 
+    // Helper to safely update text area from background thread
+    private void updateStatus(TextArea area, String status) {
+        Platform.runLater(() -> area.appendText("[*] " + status + "\n"));
+    }
+
+    // Smart Detection Regex
     private String detectInputType(String input) {
         if (input.matches("^(\\d{1,3}\\.){3}\\d{1,3}$")) return "IP_ADDRESS";
         if (input.matches("^[A-Za-z0-9+_.-]+@(.+)$")) return "EMAIL_ADDRESS";
-        if (input.contains(".") && !input.startsWith("http")) return "DOMAIN_NAME";
-        return "UNKNOWN_FORMAT";
+        // Check for domain (must have dot, not start with http, and no spaces)
+        if (input.contains(".") && !input.startsWith("http") && !input.contains(" ")) return "DOMAIN_NAME";
+        // Fallback to Username
+        return "USERNAME";
     }
 
     public static void main(String[] args) {

@@ -7,43 +7,55 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class EmailService {
-    // This API is free for limited daily use
-    private static final String API_URL = "https://emailvalidation.abstractapi.com/v1/?api_key=YOUR_FREE_KEY&email=";
-
-    // Note: You will need a free key from AbstractAPI or use a different free endpoint like:
-    // https://api.eva.pingutil.com/email?email= (Totally free, no key needed)
-
-    private static final String FREE_API = "https://api.eva.pingutil.com/email?email=";
+    // New reliable free API: Disify
+    private static final String API_URL = "https://www.disify.com/api/email/";
 
     public String getEmailReport(String email) {
         OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(FREE_API + email).build();
+        Request request = new Request.Builder()
+                .url(API_URL + email)
+                .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (response.body() != null) {
+            if (response.isSuccessful() && response.body() != null) {
                 String jsonData = response.body().string();
                 JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
-                // Extract useful data
-                boolean isDisposable = json.get("data").getAsJsonObject().get("disposable").getAsBoolean();
-                boolean isWebmail = json.get("data").getAsJsonObject().get("webmail").getAsBoolean();
-                boolean deliverable = json.get("data").getAsJsonObject().get("deliverable").getAsBoolean();
+                // Safe extraction using helper method
+                boolean format = getSafeBoolean(json, "format");
+                boolean disposable = getSafeBoolean(json, "disposable");
+                boolean dns = getSafeBoolean(json, "dns");
+
+                String domain = (json.has("domain") && !json.get("domain").isJsonNull())
+                        ? json.get("domain").getAsString()
+                        : "Unknown";
 
                 return String.format(
                         "--- EMAIL INTELLIGENCE ---\n" +
                                 "[+] Target: %s\n" +
-                                "[+] Deliverable: %s\n" +
-                                "[+] Is Disposable (Burner): %s\n" +
-                                "[+] Is Webmail (Gmail/Yahoo): %s\n",
+                                "[+] Format Valid: %s\n" +
+                                "[+] Domain: %s\n" +
+                                "[+] DNS Active: %s\n" +
+                                "[+] Is Disposable (Burner): %s\n",
                         email,
-                        deliverable ? "YES" : "NO",
-                        isDisposable ? "YES (Suspicious)" : "NO",
-                        isWebmail ? "YES" : "NO"
+                        format ? "YES" : "NO",
+                        domain,
+                        dns ? "YES" : "NO",
+                        disposable ? "YES (RISK)" : "NO"
                 );
+            } else {
+                return "[!] Error: API returned status " + response.code();
             }
         } catch (Exception e) {
-            return "[!] Error checking email: " + e.getMessage();
+            return "[!] Error fetching email data: " + e.getMessage();
         }
-        return "[!] No data found.";
+    }
+
+    // Helper method to safely get boolean values
+    private boolean getSafeBoolean(JsonObject json, String key) {
+        if (json.has(key) && !json.get(key).isJsonNull()) {
+            return json.get(key).getAsBoolean();
+        }
+        return false; // Default to false if missing
     }
 }
