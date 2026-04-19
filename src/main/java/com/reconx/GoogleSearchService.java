@@ -25,11 +25,14 @@ public class GoogleSearchService {
         report.append("--- GOOGLE SOCIAL INTELLIGENCE ---\n");
         report.append("[*] Target: '").append(query).append("'\n");
 
+        // Dorking: Search specific major platforms via Google
+        String dorkQuery = String.format("%s (site:instagram.com OR site:facebook.com OR site:twitter.com OR site:linkedin.com OR site:tiktok.com)", query);
+        
         OkHttpClient client = new OkHttpClient();
 
         try {
             // Encode the query so spaces don't break the URL
-            String safeQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            String safeQuery = URLEncoder.encode(dorkQuery, StandardCharsets.UTF_8);
             String url = BASE_URL + "?key=" + API_KEY + "&cx=" + CX_ID + "&q=" + safeQuery;
 
             Request request = new Request.Builder().url(url).build();
@@ -60,8 +63,17 @@ public class GoogleSearchService {
                         report.append("    (Tip: Did you add sites like instagram.com to your Search Engine config?)\n");
                     }
                 } else {
-                    report.append("[!] API Error: ").append(response.code());
-                    report.append(" - Check if 'Custom Search API' is enabled in Google Cloud Console.\n");
+                    String errorMsg = "No details";
+                    if (response.body() != null) {
+                        try {
+                            JsonObject errorJson = JsonParser.parseString(response.body().string()).getAsJsonObject();
+                            if (errorJson.has("error")) {
+                                errorMsg = errorJson.getAsJsonObject("error").get("message").getAsString();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    report.append("[!] API Error: ").append(response.code()).append(" (").append(errorMsg).append(")\n");
+                    report.append("    -> Check if 'Custom Search API' is enabled and your API key/CX ID are correct.\n");
                 }
             }
         } catch (Exception e) {

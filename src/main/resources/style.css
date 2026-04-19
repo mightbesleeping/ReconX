@@ -1,34 +1,135 @@
+/* --- MODERN MATERIAL DARK THEME --- */
+
 .root {
-    -fx-background-color: #0d0d0d; /* Deep Black */
+    -fx-background-color: #1a1b26; /* Deep Night Blue */
+    -fx-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.main-container {
+    -fx-background-color: #1a1b26;
+}
+
+/* --- HEADER SECTION --- */
+.header-section {
+    -fx-border-color: transparent transparent #414868 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0 0 15 0;
+}
+
+.title-label {
+    -fx-text-fill: #bb9af7; /* Material Purple */
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(three-pass-box, rgba(187, 154, 247, 0.3), 10, 0, 0, 0);
+}
+
+.subtitle-label {
+    -fx-text-fill: #787c99;
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+}
+
+/* --- FORM CONTROLS --- */
+.text-field {
+    -fx-background-color: #24283b;
+    -fx-text-fill: #c0caf5;
+    -fx-prompt-text-fill: #565f89;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #414868;
+    -fx-padding: 10 15;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused {
+    -fx-border-color: #7aa2f7; /* Material Blue */
+    -fx-background-color: #2f354a;
+}
+
+/* --- BUTTONS --- */
+.button {
+    -fx-cursor: hand;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+    -fx-font-weight: bold;
+    -fx-transition: 0.3s;
+}
+
+.button-primary {
+    -fx-background-color: #7aa2f7;
+    -fx-text-fill: #1a1b26;
+}
+
+.button-primary:hover {
+    -fx-background-color: #89ddff;
+}
+
+.button-secondary {
+    -fx-background-color: #414868;
+    -fx-text-fill: #c0caf5;
+}
+
+.button-secondary:hover {
+    -fx-background-color: #565f89;
+}
+
+.button-danger {
+    -fx-background-color: #f7768e;
+    -fx-text-fill: #1a1b26;
+}
+
+.button-danger:hover {
+    -fx-background-color: #ff9e64;
+}
+
+/* --- RESULTS AREA --- */
+.text-area {
+    -fx-control-inner-background: #16161e;
+    -fx-background-color: #16161e;
+    -fx-text-fill: #9ece6a; /* Matrix Green but softer */
+    -fx-font-family: 'Consolas', 'Courier New', monospace;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #414868;
+    -fx-padding: 10;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+}
+
+/* --- FOOTER SECTION --- */
+.footer-section {
+    -fx-padding: 10 0 0 0;
+    -fx-border-color: #414868 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
 }
 
 .label {
-    -fx-text-fill: #00ff41; /* Matrix Green */
-    -fx-font-family: "Consolas";
+    -fx-text-fill: #a9b1d6;
 }
 
-.text-field {
-    -fx-background-color: #1a1a1a;
-    -fx-text-fill: #00ff41;
-    -fx-prompt-text-fill: #008f11;
-    -fx-border-color: #00ff41;
-    -fx-border-width: 1px;
+.progress-bar {
+    -fx-indeterminate-bar-length: 60;
 }
 
-.button {
-    -fx-background-color: #00ff41;
-    -fx-text-fill: #0d0d0d;
-    -fx-font-family: "Consolas";
-    -fx-font-weight: bold;
+.progress-bar .track {
+    -fx-background-color: #24283b;
+    -fx-background-radius: 10;
 }
 
-.button:hover {
-    -fx-background-color: #008f11;
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #7aa2f7, #bb9af7);
+    -fx-background-radius: 10;
 }
 
-.text-area {
-    -fx-control-inner-background: #000000;
-    -fx-text-fill: #00ff41;
-    -fx-font-family: "Consolas";
-    -fx-border-color: #00ff41;
+/* --- SCROLL BAR --- */
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical .thumb {
+    -fx-background-color: #414868;
+    -fx-background-radius: 5;
 }

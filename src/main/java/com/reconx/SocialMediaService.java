@@ -13,33 +13,43 @@ public class SocialMediaService {
     private final Map<String, String> sites = new HashMap<>();
 
     public SocialMediaService() {
+        // Major Social Platforms
         sites.put("GitHub", "https://github.com/%s");
         sites.put("Reddit", "https://www.reddit.com/user/%s");
+        sites.put("Instagram", "https://www.instagram.com/%s/");
+        sites.put("Twitter/X", "https://twitter.com/%s");
+        sites.put("TikTok", "https://www.tiktok.com/@%s");
+        sites.put("YouTube", "https://www.youtube.com/@%s");
+        
+        // Professional & Dev
+        sites.put("LinkedIn", "https://www.linkedin.com/in/%s");
+        sites.put("StackOverflow", "https://stackoverflow.com/users/search?q=%s");
+        sites.put("Dev.to", "https://dev.to/%s");
+        
+        // Creative & Others
+        sites.put("Pinterest", "https://www.pinterest.com/%s/");
+        sites.put("Behance", "https://www.behance.net/%s");
+        sites.put("Dribbble", "https://dribbble.com/%s");
+        sites.put("Twitch", "https://www.twitch.tv/%s");
+        sites.put("Spotify", "https://open.spotify.com/user/%s");
+        sites.put("Steam", "https://steamcommunity.com/id/%s");
+        
+        // Knowledge
         sites.put("Wikipedia", "https://en.wikipedia.org/wiki/User:%s");
-        // Add more if you like!
+        sites.put("Medium", "https://medium.com/@%s");
     }
 
     public String checkProfiles(String originalUsername) {
         StringBuilder report = new StringBuilder();
         report.append("--- SOCIAL MEDIA SCAN: ").append(originalUsername).append(" ---\n");
 
-        OkHttpClient client = new OkHttpClient();
-        List<String> variations = generateVariations(originalUsername);
+        OkHttpClient client = new OkHttpClient.Builder()
+                .followRedirects(true)
+                .build();
+        
+        report.append("[*] Scanning ").append(sites.size()).append(" platforms...\n\n");
 
-        report.append("[*] Checking variations: ").append(variations.toString()).append("\n\n");
-
-        // Scan the original username first
         scanUsername(client, originalUsername, report);
-
-        // Scan variations (Limit to 3 variations to keep it fast)
-        int count = 0;
-        for (String variant : variations) {
-            if (count >= 3) break; // Don't scan too many or it gets slow
-            if (!variant.equals(originalUsername)) {
-                scanUsername(client, variant, report);
-            }
-            count++;
-        }
 
         return report.toString();
     }

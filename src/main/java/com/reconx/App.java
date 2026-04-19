@@ -3,70 +3,110 @@ package com.reconx;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 public class App extends Application {
 
-    // Declare services globally so they are created once
     private final GoogleSearchService googleService = new GoogleSearchService();
+    private final SocialMediaService socialMediaService = new SocialMediaService();
     private final EmailService emailService = new EmailService();
     private final DomainService domainService = new DomainService();
     private final IPService ipService = new IPService();
 
+    private Label statusLabel;
+    private ProgressBar progressBar;
+
     @Override
     public void start(Stage stage) {
-        // --- UI COMPONENTS ---
-        Label titleLabel = new Label("> ReconX_Scanner_v1.0");
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+        // --- HEADER ---
+        VBox header = new VBox(5);
+        header.getStyleClass().add("header-section");
+        Label titleLabel = new Label("RECONX INTELLIGENCE SYSTEM");
+        titleLabel.getStyleClass().add("title-label");
+        Label subtitleLabel = new Label("Advanced OSINT Analysis Framework v1.0");
+        subtitleLabel.getStyleClass().add("subtitle-label");
+        header.getChildren().addAll(titleLabel, subtitleLabel);
 
+        // --- SEARCH SECTION ---
+        HBox searchBox = new HBox(10);
+        searchBox.setAlignment(Pos.CENTER);
         TextField inputField = new TextField();
         inputField.setPromptText("Enter Target (IP / Domain / Email / Username)...");
+        HBox.setHgrow(inputField, Priority.ALWAYS);
+        Button searchBtn = new Button("EXECUTE SCAN");
+        searchBtn.getStyleClass().add("button-primary");
+        searchBox.getChildren().addAll(inputField, searchBtn);
 
-        Button searchBtn = new Button("EXECUTE INTELLIGENCE SCAN");
-        searchBtn.setMaxWidth(Double.MAX_VALUE); // Button stretches to fill width
+        // --- ACTION TOOLBAR ---
+        FlowPane toolbar = new FlowPane(10, 10);
+        toolbar.setAlignment(Pos.CENTER);
 
-        Button saveBtn = new Button("SAVE REPORT TO FILE");
-        saveBtn.setStyle("-fx-background-color: #0000FF; -fx-text-fill: white;");
-        saveBtn.setMaxWidth(Double.MAX_VALUE);
+        Button saveBtn = new Button("SAVE REPORT");
+        saveBtn.getStyleClass().add("button-secondary");
+
+        Button openFolderBtn = new Button("REPORTS FOLDER");
+        openFolderBtn.getStyleClass().add("button-secondary");
+
+        Button historyBtn = new Button("HISTORY");
+        historyBtn.getStyleClass().add("button-secondary");
 
         Button clearBtn = new Button("CLEAR CONSOLE");
-        clearBtn.setStyle("-fx-background-color: #ff0000; -fx-text-fill: white;");
-        clearBtn.setMaxWidth(Double.MAX_VALUE);
+        clearBtn.getStyleClass().add("button-danger");
 
+        toolbar.getChildren().addAll(saveBtn, openFolderBtn, historyBtn, clearBtn);
+
+        // --- RESULTS AREA ---
         TextArea resultsArea = new TextArea();
         resultsArea.setEditable(false);
-        resultsArea.setPrefHeight(400);
-        resultsArea.setStyle("-fx-control-inner-background: #000000; -fx-text-fill: #00ff00; -fx-font-family: 'Consolas';");
+        resultsArea.setPromptText("Analysis results will appear here...");
+        VBox.setVgrow(resultsArea, Priority.ALWAYS);
 
-        // --- LAYOUT ---
-        VBox layout = new VBox(15, titleLabel, inputField, searchBtn, saveBtn, clearBtn, resultsArea);
-        layout.setPadding(new Insets(20));
-        VBox.setVgrow(resultsArea, Priority.ALWAYS); // Area grows with window
+        // --- FOOTER / STATUS ---
+        HBox footer = new HBox(15);
+        footer.getStyleClass().add("footer-section");
+        footer.setAlignment(Pos.CENTER_LEFT);
+        statusLabel = new Label("Ready");
+        progressBar = new ProgressBar(0);
+        progressBar.setVisible(false);
+        progressBar.setPrefWidth(150);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label versionLabel = new Label("OSINT CORE v2.5");
+        footer.getChildren().addAll(statusLabel, progressBar, spacer, versionLabel);
+
+        // --- MAIN LAYOUT ---
+        VBox mainLayout = new VBox(20);
+        mainLayout.setPadding(new Insets(25));
+        mainLayout.getStyleClass().add("main-container");
+        mainLayout.getChildren().addAll(header, searchBox, toolbar, resultsArea, footer);
 
         // Initialize DB
         DatabaseManager.initialize();
 
-        // --- ACTION HANDLERS ---
-
-        // 1. CLEAR BUTTON
+        // --- ACTIONS ---
         clearBtn.setOnAction(e -> resultsArea.clear());
 
-        // 2. SAVE BUTTON
         saveBtn.setOnAction(e -> {
             String target = inputField.getText().trim();
             String data = resultsArea.getText();
             if (!target.isEmpty() && !data.isEmpty()) {
-                ReportManager.saveReport(target, data);
+                ReportManager.saveReport(stage, target, data);
             } else {
-                resultsArea.setText("[!] No data to save. Run a scan first.");
+                showToast("No data to save. Run a scan first.");
             }
         });
 
-        // 3. SEARCH BUTTON (The Core Logic)
+        openFolderBtn.setOnAction(e -> ReportManager.openReportsFolder());
+
+        historyBtn.setOnAction(e -> {
+            resultsArea.clear();
+            resultsArea.setText(DatabaseManager.getHistory());
+        });
+
         searchBtn.setOnAction(e -> {
             String input = inputField.getText().trim();
             if (input.isEmpty()) return;
@@ -74,78 +114,74 @@ public class App extends Application {
             resultsArea.clear();
             String type = detectInputType(input);
 
-            // Initial Status Update
-            resultsArea.setText("[*] Target: " + input + "\n[*] Type Detected: " + type + "\n[*] Status: Initializing Search Algorithms...\n");
-
-            // Save to History DB
+            updateStatus("Scanning " + input + "...", true);
             DatabaseManager.saveSearch(input, type);
 
-            // Launch Search in Background Thread
             new Thread(() -> {
-                String result = "";
-
+                StringBuilder resultBuilder = new StringBuilder();
                 try {
                     switch (type) {
                         case "IP_ADDRESS":
-                            updateStatus(resultsArea, "Querying Geo-Location Databases...");
-                            result = ipService.getIPInfo(input);
+                            updateStatus("Querying Geo-IP...", true);
+                            resultBuilder.append(ipService.getIPInfo(input));
                             break;
-
                         case "DOMAIN_NAME":
-                            updateStatus(resultsArea, "Fetching DNS & WHOIS Records...");
-                            result = domainService.getDNSRecords(input);
+                            updateStatus("Fetching WHOIS/DNS...", true);
+                            resultBuilder.append(domainService.getDNSRecords(input));
                             break;
-
                         case "EMAIL_ADDRESS":
-                            updateStatus(resultsArea, "Checking Reputation & Breaches...");
-                            result = emailService.getEmailReport(input);
+                            updateStatus("Checking Breaches...", true);
+                            resultBuilder.append(emailService.getEmailReport(input));
                             break;
-
                         case "USERNAME":
-                            updateStatus(resultsArea, "Running Google Intelligence Algorithm...");
-                            // This uses your new Google API Service
-                            result = googleService.searchSocialMedia(input);
+                            updateStatus("Checking Social Media...", true);
+                            resultBuilder.append(socialMediaService.checkProfiles(input));
+                            resultBuilder.append("\n").append(googleService.searchSocialMedia(input));
                             break;
-
-                        default:
-                            result = "[!] Error: Unknown format. Try an IP, Domain, or Email.";
                     }
                 } catch (Exception ex) {
-                    result = "[!] Critical Error during scan: " + ex.getMessage();
+                    resultBuilder.append("[!] Error: ").append(ex.getMessage());
                 }
 
-                // Final Update to UI
-                String finalResult = result;
-                Platform.runLater(() -> resultsArea.appendText("\n" + finalResult + "\n\n[*] SCAN COMPLETE."));
-
+                Platform.runLater(() -> {
+                    resultsArea.setText(resultBuilder.toString());
+                    updateStatus("Scan Complete", false);
+                });
             }).start();
         });
 
-        // --- SCENE SETUP ---
-        Scene scene = new Scene(layout, 600, 550);
+        // --- SCENE ---
+        Scene scene = new Scene(mainLayout, 850, 650);
         try {
             scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         } catch (Exception ex) {
-            System.out.println("Warning: style.css not found.");
+            System.err.println("Style could not be loaded: " + ex.getMessage());
         }
 
-        stage.setTitle("ReconX - Advanced OSINT Tool");
+        stage.setTitle("ReconX Intelligence System");
         stage.setScene(scene);
         stage.show();
     }
 
-    // Helper to safely update text area from background thread
-    private void updateStatus(TextArea area, String status) {
-        Platform.runLater(() -> area.appendText("[*] " + status + "\n"));
+    private void updateStatus(String message, boolean active) {
+        Platform.runLater(() -> {
+            statusLabel.setText(message);
+            progressBar.setVisible(active);
+            progressBar.setProgress(active ? -1 : 0);
+        });
     }
 
-    // Smart Detection Regex
+    private void showToast(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.show();
+    }
+
     private String detectInputType(String input) {
         if (input.matches("^(\\d{1,3}\\.){3}\\d{1,3}$")) return "IP_ADDRESS";
         if (input.matches("^[A-Za-z0-9+_.-]+@(.+)$")) return "EMAIL_ADDRESS";
-        // Check for domain (must have dot, not start with http, and no spaces)
-        if (input.contains(".") && !input.startsWith("http") && !input.contains(" ")) return "DOMAIN_NAME";
-        // Fallback to Username
+        if (input.contains(".") && !input.startsWith("http")) return "DOMAIN_NAME";
         return "USERNAME";
     }
 
