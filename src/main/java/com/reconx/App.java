@@ -48,7 +48,7 @@ public class App extends Application {
         Button saveBtn = new Button("SAVE REPORT");
         saveBtn.getStyleClass().add("button-secondary");
 
-        Button openFolderBtn = new Button("REPORTS FOLDER");
+        Button openFolderBtn = new Button("OPEN FOLDER");
         openFolderBtn.getStyleClass().add("button-secondary");
 
         Button historyBtn = new Button("HISTORY");
