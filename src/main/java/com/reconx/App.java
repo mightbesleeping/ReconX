@@ -88,6 +88,7 @@ public class App extends Application {
         DatabaseManager.initialize();
 
         // --- ACTIONS ---
+        inputField.setOnAction(e -> searchBtn.fire());
         clearBtn.setOnAction(e -> resultsArea.clear());
 
         saveBtn.setOnAction(e -> {
@@ -145,6 +146,23 @@ public class App extends Application {
 
                 Platform.runLater(() -> {
                     resultsArea.setText(resultBuilder.toString());
+                    // Apply dynamic color based on type
+                    switch (type) {
+                        case "IP_ADDRESS":
+                            resultsArea.setStyle("-fx-text-fill: #9ece6a; -fx-control-inner-background: #16161e;"); // Greenish
+                            break;
+                        case "DOMAIN_NAME":
+                            resultsArea.setStyle("-fx-text-fill: #89ddff; -fx-control-inner-background: #16161e;"); // Cyan
+                            break;
+                        case "EMAIL_ADDRESS":
+                            resultsArea.setStyle("-fx-text-fill: #ff9e64; -fx-control-inner-background: #16161e;"); // Orange
+                            break;
+                        case "USERNAME":
+                            resultsArea.setStyle("-fx-text-fill: #bb9af7; -fx-control-inner-background: #16161e;"); // Purple
+                            break;
+                        default:
+                            resultsArea.setStyle("-fx-text-fill: #c0caf5; -fx-control-inner-background: #16161e;"); // Default
+                    }
                     updateStatus("Scan Complete", false);
                 });
             }).start();

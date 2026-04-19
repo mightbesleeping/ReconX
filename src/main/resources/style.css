@@ -84,19 +84,23 @@
 
 /* --- RESULTS AREA --- */
 .text-area {
-    -fx-control-inner-background: #16161e;
     -fx-background-color: #16161e;
-    -fx-text-fill: #9ece6a; /* Matrix Green but softer */
+    -fx-control-inner-background: #16161e; /* Greyish Black */
+    -fx-text-fill: #c0caf5; 
     -fx-font-family: 'Consolas', 'Courier New', monospace;
     -fx-font-size: 13px;
     -fx-background-radius: 8;
     -fx-border-radius: 8;
     -fx-border-color: #414868;
-    -fx-padding: 10;
+    -fx-padding: 5;
 }
 
 .text-area .content {
-    -fx-background-color: transparent;
+    -fx-background-color: #16161e;
+}
+
+.text-area .viewport {
+    -fx-background-color: #16161e;
 }
 
 /* --- FOOTER SECTION --- */
